@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>صلاة الفجر</title>
+
+<style>
+* {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+min-height: 100vh;
+display: flex;
+justify-content: center;
+align-items: center;
+background: #0f172a;
+overflow: hidden;
+position: relative;
+color: #ffffff;
+}
+
+.background-blobs {
+position: absolute;
+width: 100%;
+height: 100%;
+overflow: hidden;
+z-index: 1;
+}
+
+.blob {
+position: absolute;
+filter: blur(80px);
+border-radius: 50%;
+opacity: 0.6;
+animation: float 10s infinite alternate ease-in-out;
+}
+
+.blob-1 {
+width: 300px;
+height: 300px;
+background: #00d2ff;
+top: 10%;
+left: 15%;
+}
+
+.blob-2 {
+width: 350px;
+height: 350px;
+background: #3a7bd5;
+bottom: 10%;
+right: 15%;
+animation-delay: -5s;
+}
+
+@keyframes float {
+0% {
+transform: translate(0, 0) scale(1);
+}
+
+100% {
+transform: translate(30px, 50px) scale(1.1);
+}
+}
+
+.glass-card {
+position: relative;
+z-index: 2;
+background: rgba(255, 255, 255, 0.05);
+backdrop-filter: blur(16px);
+-webkit-backdrop-filter: blur(16px);
+border: 1px solid rgba(255, 255, 255, 0.15);
+border-radius: 24px;
+padding: 40px;
+width: 90%;
+max-width: 440px;
+box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+text-align: center;
+}
+
+.header-title {
+font-size: 1.2rem;
+color: #93c5fd;
+letter-spacing: 1px;
+margin-bottom: 25px;
+}
+
+.time-box {
+margin-bottom: 25px;
+}
+
+.time-display {
+font-size: 3.2rem;
+font-weight: 800;
+letter-spacing: 2px;
+color: #ffffff;
+text-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
+}
+
+.date-display {
+font-size: 1rem;
+color: #cbd5e1;
+margin-top: 5px;
+}
+
+.fajr-box {
+background: linear-gradient(
+135deg,
+rgba(56, 189, 248, 0.2),
+rgba(30, 58, 138, 0.4)
+);
+
+border: 1px solid rgba(56, 189, 248, 0.3);
+border-radius: 16px;
+padding: 20px;
+}
+
+.fajr-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 8px;
+}
+
+.fajr-title {
+font-size: 1rem;
+color: #e0f2fe;
+}
+
+.fajr-time {
+font-size: 1.8rem;
+font-weight: bold;
+color: #38bdf8;
+text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+.countdown-text {
+font-size: 0.85rem;
+color: #fde047;
+text-align: right;
+margin-top: 5px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="background-blobs">
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+</div>
+
+<div class="glass-card">
+
+<div class="header-title">
+المركز الزمني
+</div>
+
+<div class="time-box">
+
+<div class="time-display" id="clock">
+جاري تحميل الساعة...
+</div>
+
+<div class="date-display" id="date">
+جاري تحميل التاريخ...
+</div>
+
+</div>
+
+<div class="fajr-box">
+
+<div class="fajr-header">
+
+<span class="fajr-title">
+🌅 صلاة الفجر
+</span>
+
+<span class="fajr-time" id="fajr">
+جاري تحميل وقت الفجر...
+</span>
+
+</div>
+
+<div class="countdown-text" id="countdown">
+جاري حساب الوقت المتبقي...
+</div>
+
+</div>
+
+</div>
+
+<script>
+let fajrHour = 5;
+let fajrMinute = 35;
+let fajrPeriod = "AM";
+
+/* جلب وقت الفجر من Netlify Function */
+async function loadFajrTime() {
+try {
+const response = await fetch("/api/fajr");
+
+if (!response.ok) {
+throw new Error("Failed to load Fajr time");
+}
+
+const data = await response.json();
+
+const fajr = data.fajr;
+
+if (!fajr) {
+throw new Error("Fajr time not found");
+}
+
+document.getElementById("fajr").textContent = fajr;
+
+/* تحويل 05:35 AM إلى أرقام /
+const match = fajr.match(
+/^(\d{1,2}):(\d{2})\s(AM|PM)$/i
+);
+
+if (!match) {
+throw new Error("Invalid Fajr format");
+}
+
+fajrHour = parseInt(match[1]);
+fajrMinute = parseInt(match[2]);
+fajrPeriod = match[3].toUpperCase();
+
+if (fajrPeriod === "PM" && fajrHour !== 12) {
+fajrHour += 12;
+}
+
+if (fajrPeriod === "AM" && fajrHour === 12) {
+fajrHour = 0;
+}
+
+} catch (error) {
+console.error(error);
+
+document.getElementById("fajr").textContent =
+"تعذر تحميل الوقت";
+}
+}
+
+function updateDashboard() {
+const now = new Date();
+
+/* الساعة بنظام 12 ساعة */
+let hours = now.getHours();
+
+const minutes = String(now.getMinutes()).padStart(2, "0");
+const seconds = String(now.getSeconds()).padStart(2, "0");
+
+const period = hours >= 12 ? "PM" : "AM";
+
+hours = hours % 12;
+
+if (hours === 0) {
+hours = 12;
+}
+
+document.getElementById("clock").textContent =
+hours + ":" + minutes + ":" + seconds + " " + period;
+
+/* التاريخ */
+const options = {
+weekday: "long",
+year: "numeric",
+month: "long",
+day: "numeric"
+};
+
+document.getElementById("date").textContent =
+now.toLocaleDateString("ar-EG", options);
+
+/* حساب وقت الفجر */
+const fajrTime = new Date(now);
+
+fajrTime.setHours(
+fajrHour,
+fajrMinute,
+0,
+0
+);
+
+/* إذا مر الفجر نحسب فجر الغد */
+if (now >= fajrTime) {
+fajrTime.setDate(
+fajrTime.getDate() + 1
+);
+}
+
+/* الوقت المتبقي */
+const diffMs = fajrTime - now;
+
+const diffHrs = Math.floor(
+diffMs / (1000 * 60 * 60)
+);
+
+const diffMins = Math.floor(
+(diffMs % (1000 * 60 * 60)) /
+(1000 * 60)
+);
+
+const diffSecs = Math.floor(
+(diffMs % (1000 * 60)) /
+1000
+);
+
+document.getElementById("countdown").textContent =
+"متبقي على أذان الفجر: " +
+diffHrs +
+" ساعة و " +
+diffMins +
+" دقيقة و " +
+diffSecs +
+" ثانية";
+}
+
+/* تحميل وقت الفجر ثم تشغيل الصفحة */
+loadFajrTime().then(() => {
+updateDashboard();
+});
+
+/* تحديث الساعة والعد التنازلي كل ثانية */
+setInterval(updateDashboard, 1000);
+
+/* إعادة جلب وقت الفجر كل دقيقة */
+setInterval(loadFajrTime, 60000);
+</script>
+
+</body>
+</html>
